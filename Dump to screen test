@@ -1,0 +1,80 @@
+/*
+www.geekstips.com
+MQ4 Gas Sensor - Arduino tutorial
+*/
+// include the library code:
+#include <LiquidCrystal.h>
+// initialize the library with the numbers of the interface pins
+LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
+#include <SoftwareSerial.h>
+//define constant values to be used for certain pins
+#define CLK 7 //SCK
+#define DBIT 8 //So
+#define CS 28 //CS
+double Temperature, v;
+const int gasPin = A0; //GAS sensor output pin to Arduino analog A0 pin
+const int gasPin2 = A0; //GAS sensor output pin to Arduino analog A0 pin
+
+void setup(){
+  Serial.begin(9600); //Initialize serial port - 9600 bps
+  // set up the LCD’s number of columns and rows:
+  lcd.begin(16, 2);
+  // Print a message to the LCD.
+  lcd.print("hello, world!");
+  pinMode(CLK, OUTPUT);
+  pinMode(DBIT, INPUT);
+  pinMode(CS, OUTPUT);
+  digitalWrite(CS, HIGH);//set initial values
+  digitalWrite(CLK, LOW);
+  delay(2000);
+  lcd.clear();
+}
+
+void loop(){
+  Serial.println(analogRead(gasPin2));
+  
+  // set the cursor to column 0, line 1
+  // (note: line 1 is the second row, since counting begins with 0):
+  ;
+  v = spiRead();
+  Temperature = v * 0.25;//to get output in Celsius
+  // print the temperature:
+  lcd.setCursor(0, 1);
+  lcd.print(Temperature);
+  //Serial.println(Temperature);
+  lcd.setCursor(0, 0);
+  lcd.print(analogRead(gasPin));
+  lcd.setCursor(6,0);
+  lcd.print(analogRead(gasPin2));
+  delay(1000);
+}
+
+int spiRead() {//In short this function reads chip value bit by bit
+  //and converts is into the voltage (no need to focus on details now)
+  int value = 0;
+  digitalWrite(CS,LOW);
+  delay(2);
+  digitalWrite(CS,HIGH);
+  delay(220);
+  /* Read the chip and return the raw temperature value */
+  /* Bring CS pin low to allow us to read the data from
+  the conversion process */
+  digitalWrite(CS,LOW);
+  /* Cycle the clock for dummy bit 15 */
+  digitalWrite(CLK,HIGH);
+  delay(1);
+  digitalWrite(CLK,LOW);
+  /*
+  Read bits 14-3 from MAX6675 for the Temp. Loop for each bit reading
+  the value and storing the final value in ’temp’
+  */
+  for (int i=14; i>=0; i--) {
+    digitalWrite(CLK,HIGH);
+    value += digitalRead(DBIT) << i;
+    digitalWrite(CLK,LOW);
+  }
+  // check bit D2 if HIGH no sensor
+  if ((value & 0x04) == 0x04) return -1;
+  // shift right three places
+  return value >> 3;
+}
