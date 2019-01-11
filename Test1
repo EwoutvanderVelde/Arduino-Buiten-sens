@@ -10,6 +10,6 @@ void setup(){
 }
 
 void loop(){
-  Serial.println(analogRead(gasPin2));
+  Serial.println(analogRead(gasPin2)); // if you change gasPin2 to gasPin you can read the other sensor
   delay(1000); // Print value every 1 sec.
 }
