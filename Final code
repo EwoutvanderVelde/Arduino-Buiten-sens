@@ -15,7 +15,7 @@ const int LED = A2;
 // temperature and humidity sensor
 #include <dht.h> 
 dht DHT;
-#define DHT11_PIN 22 // the data pin from the sensor
+#define DHT11_PIN 44 // the data pin from the sensor
 
 // time
 #include <DS3231.h>
