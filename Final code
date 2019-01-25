@@ -1,0 +1,140 @@
+// lcd
+// include the library code:
+#include <LiquidCrystal.h>
+// initialize the library with the numbers of the interface pins
+LiquidCrystal lcd(10, 9, 5, 4, 3, 2); // data cables in order to LCD pins : Rs, E, D4, D5, D6, D7 
+#include <SoftwareSerial.h>
+
+// gasses
+const int gasPin = A0; //GAS sensor output pin to Arduino analog A0 pin
+const int gasPin2 = A5; //GAS sensor output pin to Arduino analog A0 pin
+
+// LED
+const int LED = A2;
+
+// temperature and humidity sensor
+#include <dht.h> 
+dht DHT;
+#define DHT11_PIN 22 // the data pin from the sensor
+
+// time
+#include <DS3231.h>
+// Initialise the DS3231 using the hardware interface
+DS3231  rtc(SDA, SCL); // on arduino mega, SDA is pin 20 and SCL is pin 21
+
+// sd
+/* 
+* The circuit: 
+* SD card attached to SPI bus as follows: 
+** MISO - pin 50  
+** MOSI - pin 51 
+** SCK - pin 52 
+** CS - pin 49
+*/ 
+#include <SPI.h>
+#include <SD.h>
+File myFile;
+const int CS = 49; // CS pin
+
+void setup(){
+  Serial.begin(9600); //Initialize serial port - 9600 bps
+  
+  // set up the LCD’s number of columns and rows:
+  lcd.begin(16, 2);
+  // Print a message to the LCD.
+  lcd.print("hello, world!");
+  delay(2000); // time to read "hello world" for user to test the screen
+  lcd.clear(); // To prevent dual text in the same line
+  
+  // Initialize clock module
+  rtc.begin();
+
+  // sd
+  set(); // setupfunctie voor de SD
+  
+}
+
+void loop(){
+  sdtest(); // test if the SD card is still connected
+    
+  // Gas Sensors 1 and 2
+  lcd.setCursor(11, 0); 
+  lcd.print("1:"); // to know what sensor you're reading, since both gas sensors give simulair outputs
+  lcd.print(analogRead(gasPin));
+  lcd.setCursor(11,1);
+  lcd.print("2:");
+  lcd.print(analogRead(gasPin2));
+  
+  // Temperature and moisture sensor
+  int chk = DHT.read11(DHT11_PIN); 
+  lcd.setCursor(0, 0);
+  lcd.print("T:");
+  lcd.print(int(DHT.temperature));
+  lcd.setCursor(5, 0);
+  lcd.print("H:");
+  lcd.print(int(DHT.humidity));
+  
+  // Time module
+  lcd.setCursor(0, 1);
+  lcd.print(rtc.getTimeStr());
+  delay(1000);
+  lcd.setCursor(0, 1);
+  lcd.print(rtc.getTimeStr());  
+  delay(1000);
+
+  // Write to SD 
+  sdwrite();
+  lcd.clear();
+}
+
+// Test if the SDcard is still connected
+void sdtest(){
+  if (SD.begin(CS) != 1){       // will output 1 when connection is good
+    analogWrite(LED, 244);      // Turn on LED
+    lcd.setCursor(0,0);
+    lcd.clear();
+    lcd.print("SD-CARD ERROR");
+    delay(1000);
+    lcd.clear();                // Remove text so measurements can contignu when reconnected 
+  } else {
+    analogWrite(LED, 0);        // Turn LED off when connection is good
+  }  
+}
+
+void sdwrite(){
+  myFile = SD.open("test.txt", FILE_WRITE);     // Open file for writing
+  myFile.print(rtc.getDateStr());
+  myFile.print("\t");                           // Tab seperation for data processing
+  myFile.print(rtc.getTimeStr());
+  myFile.print("\t");
+  myFile.print(rtc.getUnixTime(rtc.getTime()));
+  myFile.print("\t");
+  myFile.print(DHT.temperature);
+  myFile.print("\t");
+  myFile.print(DHT.humidity);
+  myFile.print("\t");
+  myFile.print(analogRead(gasPin));
+  myFile.print("\t");
+  myFile.println(analogRead(gasPin2));
+  myFile.close();                               // Save the data
+}
+
+// one time setup of the data
+void set(){
+  SD.begin(CS);
+  myFile = SD.open("test.txt", FILE_WRITE);
+  myFile.print("# Date");
+  myFile.print("\t");
+  myFile.print("Time");
+  myFile.print("\t");
+  myFile.print("UNIX-Time");
+  myFile.print("\t");
+  myFile.print("Temp");
+  myFile.print("\t");
+  myFile.print("Humid");
+  myFile.print("\t");
+  myFile.print("Gas1");
+  myFile.print("\t");
+  myFile.println("Gas2");
+  myFile.close();
+}
