@@ -2,7 +2,7 @@
 void setup()
 {
   // Setup Serial connection
-  Serial.begin(115200);
+  Serial.begin(9600);
   // Uncomment the next line if you are using an Arduino Leonardo
   //while (!Serial) {}
   
